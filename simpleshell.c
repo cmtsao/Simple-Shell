@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <stdbool.h>
 
+// gets the current working directory and uses it to print a prompt for the shell
 void printcwd(){
   char cwd[PATH_MAX];
   char *base;
@@ -24,6 +25,7 @@ void printcwd(){
   fflush(stdout);
 }
 
+//reads user input and returns the entire line
 char* readinput(){
   char* line;
   size_t size= 0;
@@ -40,8 +42,11 @@ char* readinput(){
   return line;
 }
 
+//global variable to track the amount of arguments the user gave
 int argslength=0;
 
+//parses the input line from the user and stores each word in an arry to be processed later
+//returns the array
 char** parseinput(char* line){
   int size= 64;
   char **tokens= malloc(size * sizeof(char*));
@@ -68,6 +73,7 @@ char** parseinput(char* line){
   return tokens;
 }
 
+//built in command to change directory
 int cd(char **args){
   if (args[1] == NULL || args[2] != NULL) {
     fprintf(stderr, "Error: invalid command\n");
@@ -80,6 +86,7 @@ int cd(char **args){
   return 1;
 }
 
+//built in command to exit the shell program
 int myexit(char** args){
   if (args[1]==NULL){
     return 0;
@@ -90,6 +97,7 @@ int myexit(char** args){
   }
 }
 
+//deal with input/output redirection in three cases; when only one redirection is needed, either input or output, or when two redirections are needed
 int IOredir(char** args, char* input, char* output, bool append){
   int fdin;
   int fdout;
@@ -228,6 +236,8 @@ int IOredir(char** args, char* input, char* output, bool append){
   return 1;
 }
 
+//executes the command
+//finds built ins if present, and checks if IOredir should be called
 int executecomm(char** args, char* input, char* output, bool append){
   if(args[0]==NULL){
      return 1;
@@ -267,6 +277,7 @@ int executecomm(char** args, char* input, char* output, bool append){
   return 1;
 }
 
+//parses the argument array to check if there is a need for I/O redirection and finds the appropriate filenames
 int parseIO(char** args){
   char* input= NULL;
   char* output= NULL;
@@ -314,6 +325,7 @@ int parseIO(char** args){
   return executecomm(args, input, output, append);
 }
 
+//handles pipe redirection if present by passing the argument list and the number of pipes
 int pipehandler(char** args, int pipecount){  
   if (args[0][0]==' '){
     fprintf(stderr, "Error: invalid command\n");
@@ -431,6 +443,9 @@ int pipehandler(char** args, int pipecount){
   }
 }
 
+//parses the arguments if there are pipes or returns the standard parsing checking for IO if there are no pipes
+//this pipe parser is different from the standard parse above as this does not separate each character or word by whitespace, but rather by each command, indicated
+//by a pipe
 int parsepipe(char* line){
   char *token; 
   int size=64;
@@ -460,9 +475,11 @@ int parsepipe(char* line){
   }
 }
 
+//empty handler for signals to prevent any unwanted signals from terminating the shell
 void handler(){}
 
-
+//main program that infinitely loops until a 0 is returned to exit
+//overwrites SIGINT, SIGQUIT, and SIGSTP signals
 int main(){
   signal(SIGINT, handler);
   signal(SIGQUIT, handler);
